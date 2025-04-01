@@ -18,6 +18,8 @@ if 'correct_answers' not in st.session_state:
     st.session_state.correct_answers = 0
 if 'current_streak' not in st.session_state:
     st.session_state.current_streak = 0
+if 'user_input' not in st.session_state:
+    st.session_state.user_input = ""
 
 # Reset button
 if st.button("🔄 Reset Progress"):
@@ -25,6 +27,7 @@ if st.button("🔄 Reset Progress"):
     st.session_state.correct_answers = 0
     st.session_state.current_streak = 0
     st.session_state.messages = []
+    st.session_state.user_input = ""
     st.experimental_rerun()
 
 # Progress Tracker
@@ -48,14 +51,14 @@ st.markdown("""
 ))
 
 # Input area
-user_input = st.text_input("You:", key="input")
+user_input = st.text_input("You:", value=st.session_state.user_input, key="user_input_key")
 
-if user_input:
+if user_input and st.session_state.user_input != user_input:
+    st.session_state.user_input = user_input
     st.session_state.questions_answered += 1
     st.session_state.messages.append({"role": "user", "content": user_input})
 
     # Simulate check for correct answer
-    # In a real math app, you'd validate user_input against expected answer
     if any(char.isdigit() for char in user_input):
         st.session_state.correct_answers += 1
         st.session_state.current_streak += 1
@@ -72,6 +75,10 @@ if user_input:
 
     reply = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": reply})
+
+    # Clear input field
+    st.session_state.user_input = ""
+    st.experimental_rerun()
 
 # Display messages
 for msg in st.session_state.messages:
