@@ -1,6 +1,6 @@
 import streamlit as st
 import openai
-import os
+import random
 
 # Set your OpenAI API key here or use secrets
 openai.api_key = st.secrets.get("OPENAI_API_KEY", "your-openai-api-key")
@@ -18,8 +18,10 @@ if 'correct_answers' not in st.session_state:
     st.session_state.correct_answers = 0
 if 'current_streak' not in st.session_state:
     st.session_state.current_streak = 0
-if 'user_input' not in st.session_state:
-    st.session_state.user_input = ""
+if 'current_problem' not in st.session_state:
+    st.session_state.current_problem = None
+if 'current_answer' not in st.session_state:
+    st.session_state.current_answer = None
 
 # Reset button
 if st.button("🔄 Reset Progress"):
@@ -27,7 +29,8 @@ if st.button("🔄 Reset Progress"):
     st.session_state.correct_answers = 0
     st.session_state.current_streak = 0
     st.session_state.messages = []
-    st.session_state.user_input = ""
+    st.session_state.current_problem = None
+    st.session_state.current_answer = None
     st.rerun()
 
 # Progress Tracker
@@ -50,32 +53,37 @@ st.markdown("""
     st.session_state.current_streak
 ))
 
+# Generate new math problem
+if st.session_state.current_problem is None:
+    a, b = random.randint(1, 10), random.randint(1, 10)
+    st.session_state.current_problem = f"What is {a} + {b}?"
+    st.session_state.current_answer = a + b
+    st.session_state.messages.append({"role": "assistant", "content": f"Alright, here’s your next challenge: {st.session_state.current_problem} ✏️"})
+
 # Input with Send button
 with st.form(key="chat_form", clear_on_submit=True):
-    user_input = st.text_input("You:", key="chat_input")
+    user_input = st.text_input("Your Answer:", key="chat_input")
     submitted = st.form_submit_button("Send")
 
 if submitted and user_input:
     st.session_state.questions_answered += 1
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    # Simulate check for correct answer
-    if any(char.isdigit() for char in user_input):
-        st.session_state.correct_answers += 1
-        st.session_state.current_streak += 1
-    else:
-        st.session_state.current_streak = 0
+    # Check if input is a correct number
+    try:
+        if int(user_input) == st.session_state.current_answer:
+            st.session_state.correct_answers += 1
+            st.session_state.current_streak += 1
+            feedback = "Boom! You nailed it! ✅ Ready for the next one?"
+        else:
+            st.session_state.current_streak = 0
+            feedback = f"Almost! The correct answer was {st.session_state.current_answer}. Let's try another one!"
+    except ValueError:
+        feedback = "Hmm, that doesn’t look like a number. Try entering a number next time!"
 
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You're Coach Bry, a cool and encouraging math coach who gives short, friendly replies with emojis. Keep things positive and motivating."},
-            *st.session_state.messages
-        ]
-    )
-
-    reply = response.choices[0].message.content
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+    st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {feedback}"})
+    st.session_state.current_problem = None
+    st.session_state.current_answer = None
     st.rerun()
 
 # Display messages
@@ -83,4 +91,4 @@ for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f"**You:** {msg['content']}")
     else:
-        st.markdown(f"**Coach Bry:** {msg['content']}")
+        st.markdown(f"**{msg['content']}**")
