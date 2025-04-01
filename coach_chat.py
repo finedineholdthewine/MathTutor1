@@ -40,8 +40,8 @@ st.markdown("""
 
 st.title("🏀 Coach Bry - Math Motivation Chat")
 
-# Initialize session state
-defaults = {
+# Initialize state
+state_defaults = {
     'name': '',
     'name_submitted': False,
     'messages': [],
@@ -52,12 +52,12 @@ defaults = {
     'current_answer': None,
     'current_level': 1,
     'awaiting_level_up_response': False,
-    'pending_hint': False,
-    'just_sent_hint': False
+    'chat_mode': 'ready',  # Modes: ready, waiting_for_hint, showing_hint, ready_for_new_problem
+    'last_problem': ''
 }
-for key, value in defaults.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
+for k, v in state_defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 if not st.session_state.name_submitted:
     st.session_state.messages = []
@@ -67,34 +67,27 @@ if not st.session_state.name_submitted:
         name_submit = st.form_submit_button("Let's Go!")
         if name_submit and st.session_state.name.strip() != "":
             st.session_state.name_submitted = True
+            st.session_state.current_level = 1
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"})
-            st.session_state.just_sent_hint = True
+            st.session_state.chat_mode = "ready"
             st.rerun()
     st.stop()
 
-# Progress
-if st.session_state.questions_answered > 0:
-    accuracy = round((st.session_state.correct_answers / st.session_state.questions_answered) * 100)
-else:
-    accuracy = 0
-
+# Progress display
 with st.expander("📊 Progress (click to expand/collapse)", expanded=False):
-    st.markdown("""
-    - Questions Answered: {0}
-    - Correct: {1}
-    - Accuracy: {2}%
-    - Current Streak: {3} ✅
-    - Current Level: {4}
-    """.format(
-        st.session_state.questions_answered,
-        st.session_state.correct_answers,
-        accuracy,
-        st.session_state.current_streak,
-        st.session_state.current_level
-    ))
+    acc = 0
+    if st.session_state.questions_answered > 0:
+        acc = round((st.session_state.correct_answers / st.session_state.questions_answered) * 100)
+    st.markdown(f"""
+    - Questions Answered: {st.session_state.questions_answered}
+    - Correct: {st.session_state.correct_answers}
+    - Accuracy: {acc}%
+    - Current Streak: {st.session_state.current_streak} ✅
+    - Current Level: {st.session_state.current_level}
+    """)
     if st.button("🔄 Reset Progress"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+        for k in state_defaults:
+            st.session_state[k] = state_defaults[k]
         st.rerun()
 
 def generate_problem(level):
@@ -112,32 +105,29 @@ def generate_problem(level):
         expr, answer = "2 + (3 - 1)", 4
     return expr, answer
 
-# Handle staged hint delivery
-if st.session_state.pending_hint:
-    st.session_state.pending_hint = False
-    problem = st.session_state.last_problem if 'last_problem' in st.session_state else ""
-    hint_prompt = f"Give a short hint to a middle schooler for solving this math problem step-by-step: {problem}. Keep it positive and clear."
+# Stage logic for staggered feedback → hint → problem
+if st.session_state.chat_mode == "waiting_for_hint":
+    st.session_state.chat_mode = "showing_hint"
+    hint_prompt = f"Give a short hint to a middle schooler for solving this math problem step-by-step: {st.session_state.last_problem}. Keep it positive and clear."
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": hint_prompt}]
     )
     hint = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {hint}"})
-    st.session_state.just_sent_hint = True
     st.rerun()
 
-# Wait a round after sending a hint before generating a new question
-if st.session_state.just_sent_hint:
-    st.session_state.just_sent_hint = False
+elif st.session_state.chat_mode == "showing_hint":
+    st.session_state.chat_mode = "ready"
     st.rerun()
 
-# Level up prompt
+# Level-up prompt logic
 if st.session_state.current_streak >= 5 and not st.session_state.awaiting_level_up_response:
     st.session_state.awaiting_level_up_response = True
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Whoa {st.session_state.name}, 5 in a row?! Want to level up? Type 'yes' or 'no'."})
 
-# Generate a new problem
-if st.session_state.current_problem is None and not st.session_state.awaiting_level_up_response:
+# Generate new question if ready
+if st.session_state.current_problem is None and not st.session_state.awaiting_level_up_response and st.session_state.chat_mode == "ready":
     expr, answer = generate_problem(st.session_state.current_level)
     st.session_state.current_problem = expr
     st.session_state.current_answer = answer
@@ -145,12 +135,12 @@ if st.session_state.current_problem is None and not st.session_state.awaiting_le
     tip = "Remember—parentheses first!" if st.session_state.current_level == 1 else "Multiply and divide left to right!"
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Level {st.session_state.current_level} challenge: `{expr}` ✏️ {tip}"})
 
-# Show chat messages
+# Display last 4 chat messages
 for msg in st.session_state.messages[-4:]:
-    bubble_class = "user-bubble" if msg["role"] == "user" else "bry-bubble"
-    st.markdown(f'<div class="chat-bubble {bubble_class} clearfix">{msg["content"]}</div>', unsafe_allow_html=True)
+    role_class = "user-bubble" if msg["role"] == "user" else "bry-bubble"
+    st.markdown(f'<div class="chat-bubble {role_class} clearfix">{msg["content"]}</div>', unsafe_allow_html=True)
 
-# Input form
+# Input
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Your Answer or Question:", key="chat_input")
     submitted = st.form_submit_button("Send")
@@ -161,12 +151,12 @@ if submitted and user_input:
     if st.session_state.awaiting_level_up_response:
         if user_input.lower() == "yes":
             st.session_state.current_level += 1
-            st.session_state.awaiting_level_up_response = False
             st.session_state.current_streak = 0
+            st.session_state.awaiting_level_up_response = False
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Let’s gooo! Welcome to Level {st.session_state.current_level}, {st.session_state.name}!"})
         elif user_input.lower() == "no":
-            st.session_state.awaiting_level_up_response = False
             st.session_state.current_streak = 0
+            st.session_state.awaiting_level_up_response = False
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: No problem! Let’s keep sharpening our skills here."})
         st.rerun()
 
@@ -176,26 +166,21 @@ if submitted and user_input:
         if user_answer == st.session_state.current_answer:
             st.session_state.correct_answers += 1
             st.session_state.current_streak += 1
-            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Awesome, {st.session_state.name}! ✅ You rocked that one."})
+            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Nailed it, {st.session_state.name}! ✅"})
             st.session_state.current_problem = None
             st.session_state.current_answer = None
         else:
             st.session_state.current_streak = 0
-            feedback = f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s go over it."
-            st.session_state.messages.append({"role": "assistant", "content": feedback})
-            st.session_state.pending_hint = True
+            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s walk through it together."})
+            st.session_state.chat_mode = "waiting_for_hint"
             st.session_state.current_problem = None
             st.session_state.current_answer = None
     except ValueError:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids. Speak clearly, use examples, and encourage questions. Always be supportive and friendly."},
-                *st.session_state.messages
-            ]
+            messages=[{"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids."}, *st.session_state.messages]
         )
         reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {reply}"})
-        st.rerun()
 
     st.rerun()
