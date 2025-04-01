@@ -28,7 +28,7 @@ if st.button("🔄 Reset Progress"):
     st.session_state.current_streak = 0
     st.session_state.messages = []
     st.session_state.user_input = ""
-    st.experimental_rerun()
+    st.rerun()
 
 # Progress Tracker
 if st.session_state.questions_answered > 0:
@@ -78,7 +78,7 @@ if user_input and st.session_state.user_input != user_input:
 
     # Clear input field
     st.session_state.user_input = ""
-    st.experimental_rerun()
+    st.rerun()
 
 # Display messages
 for msg in st.session_state.messages:
