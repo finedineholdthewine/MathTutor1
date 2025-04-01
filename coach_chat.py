@@ -40,28 +40,24 @@ st.markdown("""
 
 st.title("🏀 Coach Bry - Math Motivation Chat")
 
-if 'name' not in st.session_state:
-    st.session_state.name = ""
-if 'name_submitted' not in st.session_state:
-    st.session_state.name_submitted = False
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'questions_answered' not in st.session_state:
-    st.session_state.questions_answered = 0
-if 'correct_answers' not in st.session_state:
-    st.session_state.correct_answers = 0
-if 'current_streak' not in st.session_state:
-    st.session_state.current_streak = 0
-if 'current_problem' not in st.session_state:
-    st.session_state.current_problem = None
-if 'current_answer' not in st.session_state:
-    st.session_state.current_answer = None
-if 'current_level' not in st.session_state:
-    st.session_state.current_level = 1
-if 'awaiting_level_up_response' not in st.session_state:
-    st.session_state.awaiting_level_up_response = False
-if 'pending_hint' not in st.session_state:
-    st.session_state.pending_hint = False
+# Initialize session state
+defaults = {
+    'name': '',
+    'name_submitted': False,
+    'messages': [],
+    'questions_answered': 0,
+    'correct_answers': 0,
+    'current_streak': 0,
+    'current_problem': None,
+    'current_answer': None,
+    'current_level': 1,
+    'awaiting_level_up_response': False,
+    'pending_hint': False,
+    'just_sent_hint': False
+}
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 if not st.session_state.name_submitted:
     st.session_state.messages = []
@@ -72,9 +68,11 @@ if not st.session_state.name_submitted:
         if name_submit and st.session_state.name.strip() != "":
             st.session_state.name_submitted = True
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"})
+            st.session_state.just_sent_hint = True
             st.rerun()
     st.stop()
 
+# Progress
 if st.session_state.questions_answered > 0:
     accuracy = round((st.session_state.correct_answers / st.session_state.questions_answered) * 100)
 else:
@@ -114,6 +112,7 @@ def generate_problem(level):
         expr, answer = "2 + (3 - 1)", 4
     return expr, answer
 
+# Handle staged hint delivery
 if st.session_state.pending_hint:
     st.session_state.pending_hint = False
     problem = st.session_state.last_problem if 'last_problem' in st.session_state else ""
@@ -124,12 +123,20 @@ if st.session_state.pending_hint:
     )
     hint = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {hint}"})
+    st.session_state.just_sent_hint = True
     st.rerun()
 
+# Wait a round after sending a hint before generating a new question
+if st.session_state.just_sent_hint:
+    st.session_state.just_sent_hint = False
+    st.rerun()
+
+# Level up prompt
 if st.session_state.current_streak >= 5 and not st.session_state.awaiting_level_up_response:
     st.session_state.awaiting_level_up_response = True
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Whoa {st.session_state.name}, 5 in a row?! Want to level up? Type 'yes' or 'no'."})
 
+# Generate a new problem
 if st.session_state.current_problem is None and not st.session_state.awaiting_level_up_response:
     expr, answer = generate_problem(st.session_state.current_level)
     st.session_state.current_problem = expr
@@ -138,10 +145,12 @@ if st.session_state.current_problem is None and not st.session_state.awaiting_le
     tip = "Remember—parentheses first!" if st.session_state.current_level == 1 else "Multiply and divide left to right!"
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Level {st.session_state.current_level} challenge: `{expr}` ✏️ {tip}"})
 
+# Show chat messages
 for msg in st.session_state.messages[-4:]:
     bubble_class = "user-bubble" if msg["role"] == "user" else "bry-bubble"
     st.markdown(f'<div class="chat-bubble {bubble_class} clearfix">{msg["content"]}</div>', unsafe_allow_html=True)
 
+# Input form
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Your Answer or Question:", key="chat_input")
     submitted = st.form_submit_button("Send")
@@ -187,5 +196,6 @@ if submitted and user_input:
         )
         reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {reply}"})
+        st.rerun()
 
     st.rerun()
