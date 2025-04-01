@@ -26,6 +26,8 @@ if 'current_problem' not in st.session_state:
     st.session_state.current_problem = None
 if 'current_answer' not in st.session_state:
     st.session_state.current_answer = None
+if 'current_level' not in st.session_state:
+    st.session_state.current_level = 1
 
 # Ask for name at the start
 if not st.session_state.name_submitted:
@@ -52,11 +54,13 @@ with st.expander("📊 Progress (click to expand/collapse)", expanded=True):
     - Correct: {1}
     - Accuracy: {2}%
     - Current Streak: {3} ✅
+    - Current Level: {4}
     """.format(
         st.session_state.questions_answered,
         st.session_state.correct_answers,
         accuracy,
-        st.session_state.current_streak
+        st.session_state.current_streak,
+        st.session_state.current_level
     ))
     if st.button("🔄 Reset Progress"):
         st.session_state.questions_answered = 0
@@ -67,14 +71,22 @@ with st.expander("📊 Progress (click to expand/collapse)", expanded=True):
         st.session_state.current_answer = None
         st.session_state.name = ""
         st.session_state.name_submitted = False
+        st.session_state.current_level = 1
         st.rerun()
 
-# Generate new math problem
+# LEVEL 1: Parentheses + Add/Subtract
 if st.session_state.current_problem is None:
-    a, b = random.randint(1, 10), random.randint(1, 10)
-    st.session_state.current_problem = f"What is {a} + {b}?"
-    st.session_state.current_answer = a + b
-    st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Alright {st.session_state.name}, here’s your next challenge: {st.session_state.current_problem} ✏️"})
+    a = random.randint(1, 10)
+    b = random.randint(1, 10)
+    c = random.randint(1, 10)
+    expr = f"{a} + ({b} - {c})" if random.choice([True, False]) else f"({a} - {b}) + {c}"
+    try:
+        answer = eval(expr)
+    except:
+        expr, answer = "2 + (3 - 1)", 4
+    st.session_state.current_problem = expr
+    st.session_state.current_answer = answer
+    st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Alright {st.session_state.name}, here’s your Level 1 challenge: `{st.session_state.current_problem}` ✏️ Remember—parentheses first!"})
 
 # Show only the last 3 messages
 for msg in st.session_state.messages[-3:]:
@@ -96,10 +108,10 @@ if submitted and user_input:
         if int(user_input) == st.session_state.current_answer:
             st.session_state.correct_answers += 1
             st.session_state.current_streak += 1
-            feedback = "Boom! You nailed it! ✅ Ready for the next one?"
+            feedback = f"Boom! You nailed it, {st.session_state.name}! ✅ Remember: Parentheses come first!"
         else:
             st.session_state.current_streak = 0
-            feedback = f"Almost! The correct answer was {st.session_state.current_answer}. Let's try another one!"
+            feedback = f"Almost! The correct answer was {st.session_state.current_answer}. Try breaking it down step-by-step: parentheses first!"
     except ValueError:
         feedback = "Hmm, that doesn’t look like a number. Try entering a number next time!"
 
