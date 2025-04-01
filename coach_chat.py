@@ -57,14 +57,14 @@ if st.session_state.current_problem is None:
     st.session_state.current_answer = a + b
     st.session_state.messages.append({"role": "assistant", "content": f"Alright, here’s your next challenge: {st.session_state.current_problem} ✏️"})
 
-# Display all messages first
-for msg in st.session_state.messages:
+# Show only the last 3 messages
+for msg in st.session_state.messages[-3:]:
     if msg["role"] == "user":
         st.markdown(f"**You:** {msg['content']}")
     else:
         st.markdown(f"**{msg['content']}**")
 
-# Then show input form LAST to keep it on screen
+# Input form at the bottom
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Your Answer:", key="chat_input")
     submitted = st.form_submit_button("Send")
