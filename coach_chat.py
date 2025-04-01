@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 import random
+import time
 
 # Set your OpenAI API key here or use secrets
 openai.api_key = st.secrets.get("OPENAI_API_KEY", "your-openai-api-key")
@@ -71,6 +72,8 @@ if not st.session_state.name_submitted:
         name_submit = st.form_submit_button("Let's Go!")
         if name_submit and st.session_state.name.strip() != "":
             st.session_state.name_submitted = True
+            with st.spinner("Coach Bry is thinking..."):
+                time.sleep(1.2)
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"})
             st.rerun()
     st.stop()
@@ -81,7 +84,7 @@ if st.session_state.questions_answered > 0:
 else:
     accuracy = 0
 
-with st.expander("📊 Progress (click to expand/collapse)", expanded=True):
+with st.expander("📊 Progress (click to expand/collapse)", expanded=False):
     st.markdown("""
     - Questions Answered: {0}
     - Correct: {1}
@@ -128,20 +131,24 @@ def generate_problem(level):
         expr, answer = "2 + (3 - 1)", 4
     return expr, answer
 
-# Level up trigger
+# Level up prompt
 if st.session_state.current_streak >= 5 and not st.session_state.awaiting_level_up_response:
     st.session_state.awaiting_level_up_response = True
+    with st.spinner("Coach Bry is thinking..."):
+        time.sleep(1.5)
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Whoa {st.session_state.name}, 5 in a row?! Want to level up? Type 'yes' or 'no'."})
 
-# Generate question
+# Generate problem
 if st.session_state.current_problem is None and not st.session_state.awaiting_level_up_response:
     expr, answer = generate_problem(st.session_state.current_level)
     st.session_state.current_problem = expr
     st.session_state.current_answer = answer
     tip = "Remember—parentheses first!" if st.session_state.current_level == 1 else "Multiply and divide left to right!"
+    with st.spinner("Coach Bry is thinking..."):
+        time.sleep(1.2)
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Level {st.session_state.current_level} challenge: `{expr}` ✏️ {tip}"})
 
-# Chat bubble display
+# Chat display
 for msg in st.session_state.messages[-4:]:
     if msg["role"] == "user":
         st.markdown(f'<div class="chat-bubble user-bubble clearfix">{msg["content"]}</div>', unsafe_allow_html=True)
@@ -161,10 +168,14 @@ if submitted and user_input:
             st.session_state.current_level += 1
             st.session_state.awaiting_level_up_response = False
             st.session_state.current_streak = 0
+            with st.spinner("Coach Bry is thinking..."):
+                time.sleep(1.5)
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Let’s gooo! Welcome to Level {st.session_state.current_level}, {st.session_state.name}!"})
         elif user_input.lower() == "no":
             st.session_state.awaiting_level_up_response = False
             st.session_state.current_streak = 0
+            with st.spinner("Coach Bry is thinking..."):
+                time.sleep(1.5)
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: No problem! Let’s keep sharpening our skills here."})
         st.rerun()
 
@@ -175,12 +186,16 @@ if submitted and user_input:
             st.session_state.correct_answers += 1
             st.session_state.current_streak += 1
             feedback = f"Awesome, {st.session_state.name}! ✅ You rocked that one."
+            with st.spinner("Coach Bry is thinking..."):
+                time.sleep(1.4)
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {feedback}"})
             st.session_state.current_problem = None
             st.session_state.current_answer = None
         else:
             st.session_state.current_streak = 0
             wrong_feedback = f"Almost! The answer was {st.session_state.current_answer}. Let’s go over it."
+            with st.spinner("Coach Bry is thinking..."):
+                time.sleep(1.5)
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {wrong_feedback}"})
             hint_prompt = f"Give a short hint to a middle schooler for solving this math problem step-by-step: {st.session_state.current_problem}. Keep it positive and clear."
             hint_response = openai.ChatCompletion.create(
@@ -188,11 +203,15 @@ if submitted and user_input:
                 messages=[{"role": "user", "content": hint_prompt}]
             )
             hint = hint_response.choices[0].message.content
+            with st.spinner("Coach Bry is thinking..."):
+                time.sleep(2)
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {hint}"})
             st.session_state.current_problem = None
             st.session_state.current_answer = None
 
     except ValueError:
+        with st.spinner("Coach Bry is thinking..."):
+            time.sleep(1.5)
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
