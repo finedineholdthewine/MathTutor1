@@ -10,6 +10,10 @@ st.set_page_config(page_title="Coach Chatbot", page_icon="🤖")
 st.title("🏀 Coach Bry - Math Motivation Chat")
 
 # Initialize session state
+if 'name' not in st.session_state:
+    st.session_state.name = ""
+if 'name_submitted' not in st.session_state:
+    st.session_state.name_submitted = False
 if 'messages' not in st.session_state:
     st.session_state.messages = []
 if 'questions_answered' not in st.session_state:
@@ -22,6 +26,19 @@ if 'current_problem' not in st.session_state:
     st.session_state.current_problem = None
 if 'current_answer' not in st.session_state:
     st.session_state.current_answer = None
+
+# Ask for name at the start
+if not st.session_state.name_submitted:
+    st.session_state.messages = []  # Clear chat when name starts fresh
+    st.markdown("**Coach Bry:** Hey there, superstar! What’s your name so I can cheer you on properly? 🌟")
+    with st.form(key="name_form"):
+        st.session_state.name = st.text_input("Enter your name")
+        name_submit = st.form_submit_button("Let's Go!")
+        if name_submit and st.session_state.name.strip() != "":
+            st.session_state.name_submitted = True
+            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"})
+            st.rerun()
+    st.stop()
 
 # Display progress at the top
 if st.session_state.questions_answered > 0:
@@ -48,6 +65,8 @@ with st.expander("📊 Progress (click to expand/collapse)", expanded=True):
         st.session_state.messages = []
         st.session_state.current_problem = None
         st.session_state.current_answer = None
+        st.session_state.name = ""
+        st.session_state.name_submitted = False
         st.rerun()
 
 # Generate new math problem
@@ -55,7 +74,7 @@ if st.session_state.current_problem is None:
     a, b = random.randint(1, 10), random.randint(1, 10)
     st.session_state.current_problem = f"What is {a} + {b}?"
     st.session_state.current_answer = a + b
-    st.session_state.messages.append({"role": "assistant", "content": f"Alright, here’s your next challenge: {st.session_state.current_problem} ✏️"})
+    st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Alright {st.session_state.name}, here’s your next challenge: {st.session_state.current_problem} ✏️"})
 
 # Show only the last 3 messages
 for msg in st.session_state.messages[-3:]:
