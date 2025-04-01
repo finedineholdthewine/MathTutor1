@@ -50,11 +50,12 @@ st.markdown("""
     st.session_state.current_streak
 ))
 
-# Input area
-user_input = st.text_input("You:", value=st.session_state.user_input, key="user_input_key")
+# Input with Send button
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("You:", key="chat_input")
+    submitted = st.form_submit_button("Send")
 
-if user_input and st.session_state.user_input != user_input:
-    st.session_state.user_input = user_input
+if submitted and user_input:
     st.session_state.questions_answered += 1
     st.session_state.messages.append({"role": "user", "content": user_input})
 
@@ -75,9 +76,6 @@ if user_input and st.session_state.user_input != user_input:
 
     reply = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": reply})
-
-    # Clear input field
-    st.session_state.user_input = ""
     st.rerun()
 
 # Display messages
