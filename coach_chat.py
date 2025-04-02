@@ -70,9 +70,13 @@ if not st.session_state.name_submitted:
         if name_submit and st.session_state.name.strip() != "":
             st.session_state.name_submitted = True
             st.session_state.current_level = 1
-            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"})
+            # Removed the manual "Coach Bry:" prefix to avoid double-intro issues
+            st.session_state.messages.append({
+                "role": "assistant", 
+                "content": f"Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"
+            })
             st.session_state.chat_mode = "ready"
-            st.rerun()
+            st.experimental_rerun()
     st.stop()
 
 # Progress display
