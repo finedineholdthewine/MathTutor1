@@ -202,27 +202,71 @@ if submitted and user_input:
             st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: No problem! Let’s keep sharpening our skills here."})
         st.rerun()
 
+   try:
+    user_answer = int(user_input)
+    st.session_state.questions_answered += 1
+    if user_answer == st.session_state.current_answer:
+        st.session_state.correct_answers += 1
+        st.session_state.current_streak += 1
+
+        # Generate a celebratory message from GPT
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": (
+                            "You're Coach Bry, a friendly, enthusiastic math coach for kids. "
+                            "When Lily gets an answer right, you celebrate her achievement with an imaginative, creative, and supportive message."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": "Lily just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
+                    }
+                ]
+            )
+            celebration = response.choices[0].message.content.strip()
+        except Exception as e:
+            # Fallback message in case the GPT call fails.
+            celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": celebration
+        })
+
+        st.session_state.current_problem = None
+        st.session_state.current_answer = None
+    else:
+        st.session_state.current_streak = 0
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s walk through it together."
+        })
+        st.session_state.chat_mode = "waiting_for_hint"
+        st.session_state.current_problem = None
+        st.session_state.current_answer = None
+except ValueError:
+    # Handle non-numeric input here as before.
     try:
-        user_answer = int(user_input)
-        st.session_state.questions_answered += 1
-        if user_answer == st.session_state.current_answer:
-            st.session_state.correct_answers += 1
-            st.session_state.current_streak += 1
-            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Nailed it, {st.session_state.name}! ✅"})
-            st.session_state.current_problem = None
-            st.session_state.current_answer = None
-        else:
-            st.session_state.current_streak = 0
-            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s walk through it together."})
-            st.session_state.chat_mode = "waiting_for_hint"
-            st.session_state.current_problem = None
-            st.session_state.current_answer = None
-    except ValueError:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids."}, *st.session_state.messages]
+            messages=[
+                {"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids."},
+                *st.session_state.messages
+            ]
         )
         reply = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {reply}"})
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": reply
+        })
+    except Exception as e:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": f"Coach Bry: Sorry, I ran into an error: {e}"
+        })
 
     st.rerun()
