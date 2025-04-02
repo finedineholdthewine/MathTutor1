@@ -9,31 +9,36 @@ st.set_page_config(page_title="Coach Chatbot", page_icon="🤖")
 
 st.markdown("""
 <style>
-/* Set a full-screen background image */
-body {
-    background: url(background: linear-gradient(135deg, #f5f7fa, #c3cfe2);) no-repeat center center fixed;
-    background-size: cover;
-    margin: 0;
-    padding: 0;
+.chat-bubble {
+    padding: 0.7rem 1rem;
+    border-radius: 1rem;
+    margin-bottom: 0.5rem;
+    max-width: 85%;
+    display: inline-block;
 }
-
-/* Optional: add a subtle overlay for readability */
-.stApp {
-    background: rgba(255, 255, 255, 0.85);
+.user-bubble {
+    background-color: #e0e0e0;
+    color: black;
+    text-align: right;
+    float: right;
 }
-
-/* Optional: style scrollbars for a cleaner look on mobile devices */
-::-webkit-scrollbar {
-    width: 8px;
+.bry-bubble {
+    background-color: #d0f0fd;
+    color: black;
+    text-align: left;
+    float: left;
 }
-::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
+.current-message {
+    border: 2px solid #ff9900; /* Orange border for the current message */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
 }
-::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
+.clearfix::after {
+    content: "";
+    display: block;
+    clear: both;
 }
-</style>""", unsafe_allow_html=True)
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🏀 Coach Bry - Math Motivation Chat")
 
@@ -133,9 +138,16 @@ if st.session_state.current_problem is None and not st.session_state.awaiting_le
     st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Level {st.session_state.current_level} challenge: `{expr}` ✏️ {tip}"})
 
 # Display last 4 chat messages
-for msg in st.session_state.messages[-4:]:
+messages_to_display = st.session_state.messages[-4:]
+for i, msg in enumerate(messages_to_display):
     role_class = "user-bubble" if msg["role"] == "user" else "bry-bubble"
-    st.markdown(f'<div class="chat-bubble {role_class} clearfix">{msg["content"]}</div>', unsafe_allow_html=True)
+    # If this is the last message, add the 'current-message' class for extra styling
+    if i == len(messages_to_display) - 1:
+        role_class += " current-message"
+    st.markdown(
+        f'<div class="chat-bubble {role_class} clearfix">{msg["content"]}</div>',
+        unsafe_allow_html=True
+    )
 
 # Input
 with st.form(key="chat_form", clear_on_submit=True):
