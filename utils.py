@@ -4,11 +4,6 @@ import json
 import os
 
 def generate_problem(level):
-    """
-    Generates a math problem based on the level.
-    Level 1: Simple addition/subtraction.
-    Level 2: Multiplication/division with an integer result.
-    """
     if level == 1:
         a, b, c = random.randint(1, 10), random.randint(1, 10), random.randint(1, 10)
         expr = f"{a} + ({b} - {c})" if random.choice([True, False]) else f"({a} - {b}) + {c}"
@@ -33,6 +28,21 @@ def generate_problem(level):
             c = random.randint(1, 12)
             expr = f"{a} / {b} * {c}"
             answer = (a // b) * c
+        return expr, answer
+
+    elif level == 3:
+        # Multi-step problem: a * (b + c) - d
+        a = random.randint(1, 10)
+        b = random.randint(1, 10)
+        c = random.randint(1, 10)
+        d = random.randint(1, 10)
+        expr = f"{a} * ({b} + {c}) - {d}"
+        answer = a * (b + c) - d
+        return expr, answer
+
+    else:
+        expr = "2 + (3 - 1)"
+        answer = 4
         return expr, answer
 
     else:
