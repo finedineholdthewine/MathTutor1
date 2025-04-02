@@ -2,6 +2,8 @@ import streamlit as st
 import openai
 import random
 import time
+import json
+import os
 
 openai.api_key = st.secrets.get("OPENAI_API_KEY", "your-openai-api-key")
 
@@ -70,7 +72,6 @@ if not st.session_state.name_submitted:
         if name_submit and st.session_state.name.strip() != "":
             st.session_state.name_submitted = True
             st.session_state.current_level = 1
-            # Removed the manual "Coach Bry:" prefix to avoid double-intro issues
             st.session_state.messages.append({
                 "role": "assistant", 
                 "content": f"Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"
@@ -91,6 +92,28 @@ with st.expander("📊 Progress (click to expand/collapse)", expanded=False):
     - Current Streak: {st.session_state.current_streak} ✅
     - Current Level: {st.session_state.current_level}
     """)
+    
+    # Save/Load Progress Buttons
+    progress_keys = ['name', 'questions_answered', 'correct_answers', 'current_streak', 'current_level']
+    progress_file = f"progress_{st.session_state.name}.json" if st.session_state.name else "progress.json"
+    
+    if st.button("💾 Save Progress"):
+        progress_data = {k: st.session_state[k] for k in progress_keys}
+        with open(progress_file, 'w') as f:
+            json.dump(progress_data, f)
+        st.success("Progress saved!")
+    
+    if st.button("📂 Load Progress"):
+        if os.path.exists(progress_file):
+            with open(progress_file, 'r') as f:
+                loaded_progress = json.load(f)
+            for k, v in loaded_progress.items():
+                st.session_state[k] = v
+            st.success("Progress loaded!")
+            st.rerun()
+        else:
+            st.error("No saved progress found.")
+    
     if st.button("🔄 Reset Progress"):
         for k in state_defaults:
             st.session_state[k] = state_defaults[k]
@@ -156,10 +179,9 @@ elif st.session_state.chat_mode == "showing_hint":
     st.session_state.chat_mode = "ready"
     st.rerun()
 
-# Level-up prompt logic
+# Level-up prompt logic (trigger only once)
 if st.session_state.current_streak >= 5 and not st.session_state.awaiting_level_up_response:
     st.session_state.awaiting_level_up_response = True
-    st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Whoa {st.session_state.name}, 5 in a row?! Want to level up? Type 'yes' or 'no'."})
 
 # Generate new question if ready
 if st.session_state.current_problem is None and not st.session_state.awaiting_level_up_response and st.session_state.chat_mode == "ready":
@@ -182,7 +204,31 @@ for i, msg in enumerate(messages_to_display):
         unsafe_allow_html=True
     )
 
-# Input
+# Level-up button prompt
+if st.session_state.awaiting_level_up_response:
+    st.markdown(f"**Coach Bry:** Whoa {st.session_state.name}, 5 in a row! Ready to level up?")
+    col1, col2 = st.columns(2)
+    if col1.button("Yes, level up"):
+         st.session_state.current_level += 1
+         st.session_state.current_streak = 0
+         st.session_state.awaiting_level_up_response = False
+         st.session_state.messages.append({
+             "role": "assistant",
+             "content": f"Coach Bry: Awesome! Leveling up to level {st.session_state.current_level}. Let's tackle a new challenge!"
+         })
+         st.session_state.current_problem = None
+         st.session_state.current_answer = None
+         st.rerun()
+    if col2.button("No, continue"):
+         st.session_state.awaiting_level_up_response = False
+         st.session_state.messages.append({
+             "role": "assistant",
+             "content": f"Coach Bry: No worries, {st.session_state.name}, let's keep pushing at level {st.session_state.current_level}!"
+         })
+         st.rerun()
+    st.stop()
+
+# Input form for answers or questions
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Your Answer or Question:", key="chat_input")
     submitted = st.form_submit_button("Send")
@@ -222,7 +268,6 @@ if submitted and user_input:
                 )
                 celebration = response.choices[0].message.content.strip()
             except Exception as e:
-                # Fallback if GPT call fails
                 celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
 
             st.session_state.messages.append({
@@ -266,5 +311,4 @@ if submitted and user_input:
                 "content": f"Coach Bry: Sorry, I ran into an error: {e}"
             })
 
-    # Finally, rerun the app to show the new state
     st.rerun()
