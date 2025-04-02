@@ -200,13 +200,13 @@ def display_input_form():
                             {
                                 "role": "system",
                                 "content": (
-                                    "You're Coach Bry, a friendly, enthusiastic math coach for kids. "
-                                    "When Lily gets an answer right, you celebrate with an imaginative, supportive message."
+                                    f"You're Coach Bry, a friendly, enthusiastic math coach for kids. "
+                                    f"When {st.session_state.name} gets an answer right, you celebrate with an imaginative, supportive message."
                                 )
                             },
                             {
                                 "role": "user",
-                                "content": "Lily just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
+                                "content": f"{st.session_state.name} just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
                             }
                         ]
                     )
@@ -245,7 +245,6 @@ def display_input_form():
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
         st.rerun()
-
 # --- Main Execution Flow ---
 
 if not st.session_state.name_submitted:
