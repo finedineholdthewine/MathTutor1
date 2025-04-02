@@ -93,19 +93,48 @@ with st.expander("📊 Progress (click to expand/collapse)", expanded=False):
         st.rerun()
 
 def generate_problem(level):
+    """
+    Generates a math problem based on the level.
+    For level 1: simple addition/subtraction problems.
+    For level 2: problems involving multiplication and division, 
+             designed so that the answer is an integer.
+    """
     if level == 1:
         a, b, c = random.randint(1, 10), random.randint(1, 10), random.randint(1, 10)
         expr = f"{a} + ({b} - {c})" if random.choice([True, False]) else f"({a} - {b}) + {c}"
+        try:
+            answer = int(eval(expr))
+        except Exception:
+            expr, answer = "2 + (3 - 1)", 4
+        return expr, answer
+
     elif level == 2:
-        a, b, c = random.randint(2, 12), random.randint(1, 10), random.randint(1, 10)
-        expr = f"{a} * {b} / {c}" if random.choice([True, False]) else f"{a} / {b} * {c}"
+        # Randomly choose one of two structures
+        if random.choice([True, False]):
+            # Structure: a * b / c with integer result.
+            a = random.randint(2, 12)
+            b = random.randint(2, 12)
+            product = a * b
+            # Find divisors of the product.
+            divisors = [d for d in range(1, product + 1) if product % d == 0]
+            c = random.choice(divisors)
+            expr = f"{a} * {b} / {c}"
+            answer = product // c
+        else:
+            # Structure: a / b * c with integer result.
+            b = random.randint(2, 12)
+            a = b * random.randint(1, 12)  # ensures a is a multiple of b.
+            c = random.randint(1, 12)
+            expr = f"{a} / {b} * {c}"
+            answer = (a // b) * c
+
+        return expr, answer
+
     else:
+        # Default fallback problem
         expr = "2 + (3 - 1)"
-    try:
-        answer = int(eval(expr))
-    except:
-        expr, answer = "2 + (3 - 1)", 4
-    return expr, answer
+        answer = 4
+        return expr, answer
 
 # Stage logic for staggered feedback → hint → problem
 if st.session_state.chat_mode == "waiting_for_hint":
