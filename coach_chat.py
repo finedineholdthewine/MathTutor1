@@ -11,7 +11,7 @@ st.markdown("""
 <style>
 /* Set a full-screen background image */
 body {
-    background: url('https://example.com/your_background_image.jpg') no-repeat center center fixed;
+    background: url(background: linear-gradient(135deg, #f5f7fa, #c3cfe2);) no-repeat center center fixed;
     background-size: cover;
     margin: 0;
     padding: 0;
