@@ -3,7 +3,8 @@ import openai
 import time
 import os
 import json
-from utils import generate_problem, save_progress, load_progress
+from utils 
+import generate_problem, save_progress, load_progress
 
 openai.api_key = st.secrets.get("OPENAI_API_KEY", "your-openai-api-key")
 
