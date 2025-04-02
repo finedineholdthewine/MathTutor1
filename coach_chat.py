@@ -9,34 +9,31 @@ st.set_page_config(page_title="Coach Chatbot", page_icon="🤖")
 
 st.markdown("""
 <style>
-.chat-bubble {
-    padding: 0.7rem 1rem;
-    border-radius: 1rem;
-    margin-bottom: 0.5rem;
-    max-width: 85%;
-    display: inline-block;
+/* Set a full-screen background image */
+body {
+    background: url('https://example.com/your_background_image.jpg') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
 }
-.user-bubble {
-    background-color: #e0e0e0;
-    color: black;
-    align-self: flex-end;
-    text-align: right;
-    float: right;
+
+/* Optional: add a subtle overlay for readability */
+.stApp {
+    background: rgba(255, 255, 255, 0.85);
 }
-.bry-bubble {
-    background-color: #d0f0fd;
-    color: black;
-    align-self: flex-start;
-    text-align: left;
-    float: left;
+
+/* Optional: style scrollbars for a cleaner look on mobile devices */
+::-webkit-scrollbar {
+    width: 8px;
 }
-.clearfix::after {
-    content: "";
-    display: block;
-    clear: both;
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
 }
-</style>
-""", unsafe_allow_html=True)
+::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+</style>""", unsafe_allow_html=True)
 
 st.title("🏀 Coach Bry - Math Motivation Chat")
 
