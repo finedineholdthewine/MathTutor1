@@ -131,7 +131,17 @@ def handle_problem_generation():
         st.session_state.current_problem = expr
         st.session_state.current_answer = answer
         st.session_state.last_problem = expr
-        tip = "Remember—parentheses first!" if st.session_state.current_level == 1 else "Multiply and divide left to right!"
+        
+        # Display a tip based on level
+        if st.session_state.current_level == 1:
+            tip = "Remember—parentheses first!"
+        elif st.session_state.current_level == 2:
+            tip = "Multiply and divide left to right!"
+        elif st.session_state.current_level == 3:
+            tip = "Remember: Solve inside parentheses first, then multiply, then subtract!"
+        else:
+            tip = ""
+        
         st.session_state.messages.append({
             "role": "assistant",
             "content": f"Coach Bry: Level {st.session_state.current_level} challenge: `{expr}` ✏️ {tip}"
