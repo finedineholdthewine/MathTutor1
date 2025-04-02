@@ -76,7 +76,7 @@ if not st.session_state.name_submitted:
                 "content": f"Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"
             })
             st.session_state.chat_mode = "ready"
-            st.experimental_rerun()
+            st.rerun()
     st.stop()
 
 # Progress display
