@@ -45,11 +45,6 @@ def generate_problem(level):
         answer = 4
         return expr, answer
 
-    else:
-        expr = "2 + (3 - 1)"
-        answer = 4
-        return expr, answer
-
 def save_progress(state, filename):
     """
     Saves selected progress data to a JSON file.
