@@ -188,85 +188,83 @@ with st.form(key="chat_form", clear_on_submit=True):
     submitted = st.form_submit_button("Send")
 
 if submitted and user_input:
+    # Always append the user's message
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    if st.session_state.awaiting_level_up_response:
-        if user_input.lower() == "yes":
-            st.session_state.current_level += 1
-            st.session_state.current_streak = 0
-            st.session_state.awaiting_level_up_response = False
-            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: Let’s gooo! Welcome to Level {st.session_state.current_level}, {st.session_state.name}!"})
-        elif user_input.lower() == "no":
-            st.session_state.current_streak = 0
-            st.session_state.awaiting_level_up_response = False
-            st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: No problem! Let’s keep sharpening our skills here."})
-        st.rerun()
+    try:
+        # Attempt to interpret the input as an integer
+        user_answer = int(user_input)
+        st.session_state.questions_answered += 1
 
-   try:
-    user_answer = int(user_input)
-    st.session_state.questions_answered += 1
-    if user_answer == st.session_state.current_answer:
-        st.session_state.correct_answers += 1
-        st.session_state.current_streak += 1
+        # Check correctness
+        if user_answer == st.session_state.current_answer:
+            st.session_state.correct_answers += 1
+            st.session_state.current_streak += 1
 
-        # Generate a celebratory message from GPT
+            # Generate a celebratory message from GPT
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You're Coach Bry, a friendly, enthusiastic math coach for kids. "
+                                "When Lily gets an answer right, you celebrate her achievement with "
+                                "an imaginative, creative, and supportive message."
+                            )
+                        },
+                        {
+                            "role": "user",
+                            "content": "Lily just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
+                        }
+                    ]
+                )
+                celebration = response.choices[0].message.content.strip()
+            except Exception as e:
+                # Fallback if GPT call fails
+                celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": celebration
+            })
+
+            # Clear the current problem
+            st.session_state.current_problem = None
+            st.session_state.current_answer = None
+
+        else:
+            # Wrong answer
+            st.session_state.current_streak = 0
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s walk through it together."
+            })
+            st.session_state.chat_mode = "waiting_for_hint"
+            st.session_state.current_problem = None
+            st.session_state.current_answer = None
+
+    except ValueError:
+        # Non-numeric input: use GPT for a general response
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {
-                        "role": "system", 
-                        "content": (
-                            "You're Coach Bry, a friendly, enthusiastic math coach for kids. "
-                            "When Lily gets an answer right, you celebrate her achievement with an imaginative, creative, and supportive message."
-                        )
-                    },
-                    {
-                        "role": "user",
-                        "content": "Lily just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
-                    }
+                    {"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids."},
+                    *st.session_state.messages
                 ]
             )
-            celebration = response.choices[0].message.content.strip()
+            reply = response.choices[0].message.content
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": reply
+            })
         except Exception as e:
-            # Fallback message in case the GPT call fails.
-            celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"Coach Bry: Sorry, I ran into an error: {e}"
+            })
 
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": celebration
-        })
-
-        st.session_state.current_problem = None
-        st.session_state.current_answer = None
-    else:
-        st.session_state.current_streak = 0
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s walk through it together."
-        })
-        st.session_state.chat_mode = "waiting_for_hint"
-        st.session_state.current_problem = None
-        st.session_state.current_answer = None
-except ValueError:
-    # Handle non-numeric input here as before.
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids."},
-                *st.session_state.messages
-            ]
-        )
-        reply = response.choices[0].message.content
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": reply
-        })
-    except Exception as e:
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": f"Coach Bry: Sorry, I ran into an error: {e}"
-        })
-
+    # Finally, rerun the app to show the new state
     st.rerun()
