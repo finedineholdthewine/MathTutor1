@@ -1,17 +1,15 @@
 import streamlit as st
 import openai
-import random
 import time
 import os
 import json
-
-from utils import generate_problem, save_progress, load_progress  # Import our helper functions
+from utils import generate_problem, save_progress, load_progress
 
 openai.api_key = st.secrets.get("OPENAI_API_KEY", "your-openai-api-key")
 
 st.set_page_config(page_title="Coach Chatbot", page_icon="🤖")
 
-# --- Define CSS & Page Title ---
+# --- Custom CSS ---
 st.markdown("""
 <style>
 .chat-bubble {
@@ -59,14 +57,15 @@ state_defaults = {
     'current_answer': None,
     'current_level': 1,
     'awaiting_level_up_response': False,
-    'chat_mode': 'ready',
+    'chat_mode': 'ready',  # Modes: ready, waiting_for_hint, showing_hint
     'last_problem': ''
 }
-for k, v in state_defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+for key, value in state_defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 # --- UI Functions ---
+
 def display_name_prompt():
     st.markdown("**Coach Bry:** Hey there, superstar! What’s your name so I can cheer you on properly? 🌟")
     with st.form(key="name_form"):
@@ -78,7 +77,6 @@ def display_name_prompt():
                 "role": "assistant", 
                 "content": f"Awesome, welcome {st.session_state.name}! Let’s crush some math together! 🚀"
             })
-            st.session_state.chat_mode = "ready"
             st.rerun()
     st.stop()
 
@@ -95,21 +93,23 @@ def display_progress():
         - Current Level: {st.session_state.current_level}
         """)
         progress_file = f"progress_{st.session_state.name}.json" if st.session_state.name else "progress.json"
-        if st.button("💾 Save Progress"):
+        
+        col1, col2, col3 = st.columns(3)
+        if col1.button("💾 Save Progress"):
             save_progress(st.session_state, progress_file)
             st.success("Progress saved!")
-        if st.button("📂 Load Progress"):
+        if col2.button("📂 Load Progress"):
             loaded = load_progress(progress_file)
             if loaded:
-                for k, v in loaded.items():
-                    st.session_state[k] = v
+                for key, val in loaded.items():
+                    st.session_state[key] = val
                 st.success("Progress loaded!")
                 st.rerun()
             else:
                 st.error("No saved progress found.")
-        if st.button("🔄 Reset Progress"):
-            for k in state_defaults:
-                st.session_state[k] = state_defaults[k]
+        if col3.button("🔄 Reset Progress"):
+            for key, value in state_defaults.items():
+                st.session_state[key] = value
             st.rerun()
 
 def display_messages():
@@ -123,10 +123,137 @@ def display_messages():
             unsafe_allow_html=True
         )
 
-# --- Main App Flow ---
+def handle_problem_generation():
+    if (st.session_state.current_problem is None and 
+        not st.session_state.awaiting_level_up_response and 
+        st.session_state.chat_mode == "ready"):
+        expr, answer = generate_problem(st.session_state.current_level)
+        st.session_state.current_problem = expr
+        st.session_state.current_answer = answer
+        st.session_state.last_problem = expr
+        tip = "Remember—parentheses first!" if st.session_state.current_level == 1 else "Multiply and divide left to right!"
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": f"Coach Bry: Level {st.session_state.current_level} challenge: `{expr}` ✏️ {tip}"
+        })
+
+def handle_hint_logic():
+    if st.session_state.chat_mode == "waiting_for_hint":
+        st.session_state.chat_mode = "showing_hint"
+        hint_prompt = f"Give a short hint to a middle schooler for solving this math problem step-by-step: {st.session_state.last_problem}. Keep it positive and clear."
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": hint_prompt}]
+            )
+            hint = response.choices[0].message.content
+        except Exception as e:
+            hint = "Sorry, I ran into an error generating a hint. Let's think about the steps carefully!"
+        st.session_state.messages.append({"role": "assistant", "content": f"Coach Bry: {hint}"})
+        st.rerun()
+    elif st.session_state.chat_mode == "showing_hint":
+        st.session_state.chat_mode = "ready"
+        st.rerun()
+
+def handle_level_up_prompt():
+    if st.session_state.current_streak >= 5 and not st.session_state.awaiting_level_up_response:
+        st.session_state.awaiting_level_up_response = True
+    if st.session_state.awaiting_level_up_response:
+        st.markdown(f"**Coach Bry:** Whoa {st.session_state.name}, 5 in a row! Ready to level up?")
+        col1, col2 = st.columns(2)
+        if col1.button("Yes, level up"):
+            st.session_state.current_level += 1
+            st.session_state.current_streak = 0
+            st.session_state.awaiting_level_up_response = False
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"Coach Bry: Awesome! Leveling up to level {st.session_state.current_level}. Let's tackle a new challenge!"
+            })
+            st.session_state.current_problem = None
+            st.session_state.current_answer = None
+            st.rerun()
+        if col2.button("No, continue"):
+            st.session_state.awaiting_level_up_response = False
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"Coach Bry: No worries, {st.session_state.name}, let's keep pushing at level {st.session_state.current_level}!"
+            })
+            st.rerun()
+        st.stop()
+
+def display_input_form():
+    with st.form(key="chat_form", clear_on_submit=True):
+        user_input = st.text_input("Your Answer or Question:", key="chat_input")
+        submitted = st.form_submit_button("Send")
+    if submitted and user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        try:
+            user_answer = int(user_input)
+            st.session_state.questions_answered += 1
+            if user_answer == st.session_state.current_answer:
+                st.session_state.correct_answers += 1
+                st.session_state.current_streak += 1
+                try:
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You're Coach Bry, a friendly, enthusiastic math coach for kids. "
+                                    "When Lily gets an answer right, you celebrate with an imaginative, supportive message."
+                                )
+                            },
+                            {
+                                "role": "user",
+                                "content": "Lily just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
+                            }
+                        ]
+                    )
+                    celebration = response.choices[0].message.content.strip()
+                except Exception as e:
+                    celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": celebration
+                })
+                st.session_state.current_problem = None
+                st.session_state.current_answer = None
+            else:
+                st.session_state.current_streak = 0
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"Coach Bry: Almost! The answer was {st.session_state.current_answer}. Let’s walk through it together."
+                })
+                st.session_state.chat_mode = "waiting_for_hint"
+                st.session_state.current_problem = None
+                st.session_state.current_answer = None
+        except ValueError:
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You're Coach Bry, a kind, patient math coach for kids."},
+                        *st.session_state.messages
+                    ]
+                )
+                reply = response.choices[0].message.content
+                st.session_state.messages.append({"role": "assistant", "content": reply})
+            except Exception as e:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"Coach Bry: Sorry, I ran into an error: {e}"
+                })
+        st.rerun()
+
+# --- Main Execution Flow ---
+
 if not st.session_state.name_submitted:
     display_name_prompt()
 
 display_progress()
-
-# ... (remaining logic for generating problems, handling input, etc.) ...
+handle_hint_logic()
+handle_level_up_prompt()
+handle_problem_generation()
+display_messages()
+display_input_form()
