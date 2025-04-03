@@ -54,6 +54,7 @@ state_defaults = {
     'correct_answers': 0,
     'current_streak': 0,
     'snake_unlocked': False,
+    'snake_displayed': False,
     'snake_celebrated': False,  # to avoid double GPT messages
     'current_problem': None,
     'current_answer': None,
