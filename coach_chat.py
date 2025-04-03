@@ -275,7 +275,7 @@ def display_input_form():
                 st.session_state.current_problem = None
                 st.session_state.current_answer = None
 
-        except ValueError:
+         except ValueError:
             try:
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
@@ -291,6 +291,8 @@ def display_input_form():
                     "role": "assistant",
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
+
+        st.rerun()  # ✅ This fixes the "double input" issue
 
 # 🐍 Show Snake Game (non-blocking version)
 def display_snake_game():
