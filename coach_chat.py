@@ -197,40 +197,73 @@ def display_input_form():
     with st.form(key="chat_form", clear_on_submit=True):
         user_input = st.text_input("Your Answer or Question:", key="chat_input")
         submitted = st.form_submit_button("Send")
+
     if submitted and user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
         try:
             user_answer = int(user_input)
             st.session_state.questions_answered += 1
+
             if user_answer == st.session_state.current_answer:
                 st.session_state.correct_answers += 1
                 st.session_state.current_streak += 1
-                try:
-                    response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    f"You're Coach Bry, a friendly, enthusiastic math coach for kids. "
-                                    f"When {st.session_state.name} gets an answer right, you celebrate with an imaginative, supportive message."
-                                )
-                            },
-                            {
-                                "role": "user",
-                                "content": f"{st.session_state.name} just answered correctly. Give a short, fun, and enthusiastic congratulatory message."
-                            }
-                        ]
-                    )
-                    celebration = response.choices[0].message.content.strip()
-                except Exception as e:
-                    celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": celebration
-                })
+
+                # 🐍 Snake Game Unlock Logic
+                if st.session_state.current_streak == 10 and not st.session_state.snake_unlocked:
+                    st.session_state.snake_unlocked = True
+                    try:
+                        gpt_reward = openai.ChatCompletion.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {"role": "system", "content": (
+                                    f"You're Coach Bry, a fun, hype math coach for kids. "
+                                    f"When {st.session_state.name} gets 10 correct in a row, you reward them with a surprise game. "
+                                    f"Celebrate with excitement!"
+                                )},
+                                {"role": "user", "content": f"{st.session_state.name} just got 10 math problems right in a row. Announce their reward: a Snake Game!"}
+                            ]
+                        )
+                        celebration = gpt_reward.choices[0].message.content.strip()
+                    except Exception:
+                        celebration = f"🔥 Whoa {st.session_state.name}, 10 in a row?! You just unlocked the Snake Game! 🐍🎮"
+
+                    st.session_state.snake_celebrated = True
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": celebration
+                    })
+
+                else:
+                    # 🎉 Regular Celebration Message
+                    try:
+                        response = openai.ChatCompletion.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        f"You're Coach Bry, a friendly, enthusiastic math coach for kids. "
+                                        f"When {st.session_state.name} gets an answer right, you celebrate with a short, creative message."
+                                    )
+                                },
+                                {
+                                    "role": "user",
+                                    "content": f"{st.session_state.name} just answered correctly. Congratulate them!"
+                                }
+                            ]
+                        )
+                        celebration = response.choices[0].message.content.strip()
+                    except Exception:
+                        celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
+
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": celebration
+                    })
+
                 st.session_state.current_problem = None
                 st.session_state.current_answer = None
+
             else:
                 st.session_state.current_streak = 0
                 st.session_state.messages.append({
@@ -240,6 +273,7 @@ def display_input_form():
                 st.session_state.chat_mode = "waiting_for_hint"
                 st.session_state.current_problem = None
                 st.session_state.current_answer = None
+
         except ValueError:
             try:
                 response = openai.ChatCompletion.create(
@@ -256,7 +290,15 @@ def display_input_form():
                     "role": "assistant",
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
+
         st.rerun()
+
+if st.session_state.snake_unlocked:
+    st.markdown("## 🐍 Snake Game Reward!")
+    st.markdown("You've earned it! Enjoy your break 🎉")
+
+    import streamlit.components.v1 as components
+    components.iframe("https://playsnake.org/", height=500, scrolling=True)
 # --- Main Execution Flow ---
 
 if not st.session_state.name_submitted:
