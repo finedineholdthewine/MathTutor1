@@ -290,15 +290,19 @@ def display_input_form():
                     "role": "assistant",
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
-
-        st.rerun()
-
-if st.session_state.snake_unlocked:
+if st.session_state.snake_unlocked and not st.session_state.get("snake_displayed", False):
     st.markdown("## 🐍 Snake Game Reward!")
     st.markdown("You've earned it! Enjoy your break 🎉")
 
     import streamlit.components.v1 as components
     components.iframe("https://playsnake.org/", height=500, scrolling=True)
+
+    st.session_state.snake_displayed = True
+    return  # ✅ Prevent rerun to let the game be played
+    
+    st.rerun()
+
+
 # --- Main Execution Flow ---
 
 if not st.session_state.name_submitted:
