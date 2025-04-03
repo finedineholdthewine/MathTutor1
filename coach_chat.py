@@ -69,6 +69,24 @@ for key, value in state_defaults.items():
 
 # --- UI Functions ---
 
+def display_mode_selector():
+    st.markdown(f"### Hey there, {st.session_state.name}! What would you like to do today?")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🧠 Practice Mode"):
+            st.session_state.mode_selected = True
+            st.session_state.chat_mode = "normal"
+            st.rerun()
+    with col2:
+        if st.button("⏱️ 60-Second Challenge"):
+            st.session_state.mode_selected = True
+            st.session_state.chat_mode = "timed_challenge"
+            st.session_state.challenge_start_time = time.time()
+            st.session_state.challenge_score = 0
+            st.session_state.challenge_active = True
+            st.rerun()
+
 def display_name_prompt():
     st.markdown("**Coach Bry:** Hey there, superstar! What’s your name so I can cheer you on properly? 🌟")
     with st.form(key="name_form"):
