@@ -265,7 +265,7 @@ def display_input_form():
                 st.session_state.current_problem = None
                 st.session_state.current_answer = None
 
-            else:
+                        else:
                 st.session_state.current_streak = 0
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -275,7 +275,7 @@ def display_input_form():
                 st.session_state.current_problem = None
                 st.session_state.current_answer = None
 
-         except ValueError:
+        except ValueError:
             try:
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
