@@ -328,6 +328,10 @@ st.write("✅ DEBUG → Snake Displayed:", st.session_state.get("snake_displayed
 if not st.session_state.name_submitted:
     display_name_prompt()
 
+if not st.session_state.mode_selected:
+    display_mode_selector()
+    st.stop()
+
 if (
     st.session_state.snake_unlocked 
     and not st.session_state.snake_displayed
