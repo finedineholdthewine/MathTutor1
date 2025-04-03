@@ -308,7 +308,7 @@ st.write("✅ DEBUG → Snake Displayed:", st.session_state.get("snake_displayed
 
 # 🔓 If snake unlocked and hasn't been shown yet
 if (
-    st.session_state.get("snake_unlocked", False)
+    st.session_state.get("snake_unlocked", True)
     and not st.session_state.get("snake_displayed", False)
 ):
     display_snake_game()
