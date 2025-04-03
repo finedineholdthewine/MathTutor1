@@ -309,6 +309,38 @@ def display_input_form():
 
         st.rerun()  # ✅ Fixes double-submit + refreshes form
 
+def run_timed_challenge():
+    st.markdown("## ⏱️ 60-Second Math Challenge")
+    if 'challenge_start_time' not in st.session_state:
+        st.session_state.challenge_start_time = time.time()
+        st.session_state.challenge_score = 0
+        st.session_state.challenge_problem, st.session_state.challenge_answer = generate_problem(1)
+
+    remaining = 60 - int(time.time() - st.session_state.challenge_start_time)
+    if remaining <= 0:
+        st.success(f"⏰ Time's up! You got {st.session_state.challenge_score} correct!")
+        if st.button("Back to Menu"):
+            st.session_state.mode_selected = False
+            st.session_state.chat_mode = "normal"
+            st.rerun()
+        return
+
+    st.markdown(f"**Time Left:** `{remaining}` seconds")
+    st.markdown(f"**Problem:** `{st.session_state.challenge_problem}`")
+
+    with st.form(key="timed_form", clear_on_submit=True):
+        answer = st.text_input("Your Answer", key="timed_answer")
+        submitted = st.form_submit_button("Submit")
+
+    if submitted:
+        try:
+            if int(answer) == st.session_state.challenge_answer:
+                st.session_state.challenge_score += 1
+        except:
+            pass
+        st.session_state.challenge_problem, st.session_state.challenge_answer = generate_problem(1)
+        st.rerun()
+
 # 🐍 Show Snake Game (non-blocking version)
 def display_snake_game():
     st.markdown("## 🐍 Snake Game Reward!")
@@ -338,9 +370,12 @@ if (
 ):
     display_snake_game()
 
-display_progress()
-handle_hint_logic()
-handle_level_up_prompt()
-handle_problem_generation()
-display_messages()
-display_input_form()
+if st.session_state.chat_mode == "timed":
+    run_timed_challenge()
+else:
+    display_progress()
+    handle_hint_logic()
+    handle_level_up_prompt()
+    handle_problem_generation()
+    display_messages()
+    display_input_form()
