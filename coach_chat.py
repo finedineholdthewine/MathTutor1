@@ -201,6 +201,7 @@ def display_input_form():
 
     if submitted and user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
+
         try:
             user_answer = int(user_input)
             st.session_state.questions_answered += 1
@@ -209,7 +210,6 @@ def display_input_form():
                 st.session_state.correct_answers += 1
                 st.session_state.current_streak += 1
 
-                # 🐍 Snake Game Unlock Logic
                 if st.session_state.current_streak == 10 and not st.session_state.snake_unlocked:
                     st.session_state.snake_unlocked = True
                     try:
@@ -229,13 +229,8 @@ def display_input_form():
                         celebration = f"🔥 Whoa {st.session_state.name}, 10 in a row?! You just unlocked the Snake Game! 🐍🎮"
 
                     st.session_state.snake_celebrated = True
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": celebration
-                    })
-
+                    st.session_state.messages.append({"role": "assistant", "content": celebration})
                 else:
-                    # 🎉 Regular Celebration Message
                     try:
                         response = openai.ChatCompletion.create(
                             model="gpt-3.5-turbo",
@@ -257,15 +252,12 @@ def display_input_form():
                     except Exception:
                         celebration = f"Awesome job, {st.session_state.name}! You rocked that one! 🎉"
 
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": celebration
-                    })
+                    st.session_state.messages.append({"role": "assistant", "content": celebration})
 
                 st.session_state.current_problem = None
                 st.session_state.current_answer = None
 
-                        else:
+            else:
                 st.session_state.current_streak = 0
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -292,7 +284,7 @@ def display_input_form():
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
 
-        st.rerun()  # ✅ This fixes the "double input" issue
+        st.rerun()  # ✅ Fixes double-submit + refreshes form
 
 # 🐍 Show Snake Game (non-blocking version)
 def display_snake_game():
