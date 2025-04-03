@@ -292,6 +292,7 @@ def display_input_form():
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
 # 🐍 Snake Game Unlock Display
+# 🐍 Snake Game Unlock Display
 def display_snake_game():
     st.markdown("## 🐍 Snake Game Reward!")
     st.markdown("You've earned it! Enjoy your break 🎉")
@@ -301,10 +302,17 @@ def display_snake_game():
 
     st.session_state.snake_displayed = True
 
-# 🔒 If snake unlocked but not shown yet, show it and pause the app
-if st.session_state.snake_unlocked and not st.session_state.get("snake_displayed", False):
+# 🧠 DEBUG - See what's happening
+st.write("✅ DEBUG → Snake Unlocked:", st.session_state.get("snake_unlocked"))
+st.write("✅ DEBUG → Snake Displayed:", st.session_state.get("snake_displayed"))
+
+# 🔓 If snake unlocked and hasn't been shown yet
+if (
+    st.session_state.get("snake_unlocked", False)
+    and not st.session_state.get("snake_displayed", False)
+):
     display_snake_game()
-    st.stop()
+    st.stop()  # ✅ HALTS the app here so game can show
     
     st.rerun()
 
