@@ -65,3 +65,40 @@ def load_progress(filename):
         return progress_data
     else:
         return None
+        
+        
+def load_high_scores(filename="high_scores.json"):
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            return json.load(f)
+    return []
+
+def save_high_score(name, score, filename="high_scores.json"):
+    scores = load_high_scores(filename)
+    scores.append({"name": name, "score": score})
+    scores = sorted(scores, key=lambda x: x["score"], reverse=True)[:10]
+    with open(filename, "w") as f:
+        json.dump(scores, f)
+
+def get_top_scores(filename="high_scores.json"):
+    scores = load_high_scores(filename)
+    return scores[:10]
+
+def load_player_data(filename="players.json"):
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_player_data(name, filename="players.json"):
+    data = load_player_data(filename)
+    data[name] = data.get(name, 0) + 1
+    with open(filename, "w") as f:
+        json.dump(data, f)
+
+def get_player_greeting(name, filename="players.json"):
+    data = load_player_data(filename)
+    if name in data:
+        return f"Welcome back, {name}! Let's see if you can beat your best today!"
+    else:
+        return f"Nice to meet you, {name}! Let's have some fun learning math!"
