@@ -290,7 +290,8 @@ def display_input_form():
                     "role": "assistant",
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
-if st.session_state.snake_unlocked and not st.session_state.get("snake_displayed", False):
+# 🐍 Snake Game Unlock Display
+def display_snake_game():
     st.markdown("## 🐍 Snake Game Reward!")
     st.markdown("You've earned it! Enjoy your break 🎉")
 
@@ -298,7 +299,11 @@ if st.session_state.snake_unlocked and not st.session_state.get("snake_displayed
     components.iframe("https://playsnake.org/", height=500, scrolling=True)
 
     st.session_state.snake_displayed = True
-    return  # ✅ Prevent rerun to let the game be played
+
+# 🔒 If snake unlocked but not shown yet, show it and pause the app
+if st.session_state.snake_unlocked and not st.session_state.get("snake_displayed", False):
+    display_snake_game()
+    st.stop()
     
     st.rerun()
 
