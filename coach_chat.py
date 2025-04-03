@@ -291,8 +291,8 @@ def display_input_form():
                     "role": "assistant",
                     "content": f"Coach Bry: Sorry, I ran into an error: {e}"
                 })
-# 🐍 Snake Game Unlock Display
-# 🐍 Snake Game Unlock Display
+
+# 🐍 Show Snake Game (non-blocking version)
 def display_snake_game():
     st.markdown("## 🐍 Snake Game Reward!")
     st.markdown("You've earned it! Enjoy your break 🎉")
@@ -306,21 +306,16 @@ def display_snake_game():
 st.write("✅ DEBUG → Snake Unlocked:", st.session_state.get("snake_unlocked"))
 st.write("✅ DEBUG → Snake Displayed:", st.session_state.get("snake_displayed"))
 
-# 🔓 If snake unlocked and hasn't been shown yet
-if (
-    st.session_state.get("snake_unlocked", True)
-    and not st.session_state.get("snake_displayed", False)
-):
-    display_snake_game()
-    st.stop()  # ✅ HALTS the app here so game can show
-    
-    st.rerun()
-
-
 # --- Main Execution Flow ---
 
 if not st.session_state.name_submitted:
     display_name_prompt()
+
+if (
+    st.session_state.snake_unlocked 
+    and not st.session_state.snake_displayed
+):
+    display_snake_game()
 
 display_progress()
 handle_hint_logic()
